@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Beam Music</title>
+<style>
+:root{--bg:#17120f;--panel:#241c17;--ink:#f5ede4;--mute:#a99b8d;--acc:#ffb000;--line:#3a2e26}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Georgia,"Iowan Old Style",serif}
+header{display:flex;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.logo{font-size:26px;font-weight:700;letter-spacing:-.03em;flex:1}
+main{max-width:1000px;margin:0 auto;padding:22px}
+button,input{font:inherit;border-radius:8px;border:1px solid var(--line);padding:9px 14px;background:var(--panel);color:var(--ink)}
+button{cursor:pointer;background:var(--acc);color:#1b1206;border:0;font-weight:700}button.g{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:20px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row input{flex:1;min-width:150px}
+.t{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.t div{flex:1;min-width:180px}.t small,.note{color:var(--mute)}.hide{display:none!important}
+.msg{color:var(--acc);min-height:1.5em}audio{width:100%;margin-top:10px}
+h2{margin:0 0 10px;font-size:20px}
+</style></head><body>
+<header><div class="logo">Beam Music</div><span id="who" class="note"></span><button id="authbtn">Log in</button></header>
+<main>
+<div class="box hide" id="setup"><b>Setup needed:</b> put your Supabase URL and anon key at the top of the script in public/index.html (see README).</div>
+<div class="box hide" id="authbox"><h2>Join or log in</h2><div class="row">
+<input id="em" type="email" placeholder="Email" autocomplete="email"><input id="pw" type="password" placeholder="Password (8+ characters)" autocomplete="current-password">
+<button id="login">Log in</button><button class="g" id="signup">Create account</button></div><p class="msg" id="amsg"></p></div>
+<div class="box hide" id="up"><h2>Upload a song</h2><div class="row">
+<input id="ttl" placeholder="Song title"><input id="art" placeholder="Artist name">
+<input id="prc" type="number" min="0" step="0.5" placeholder="Price in GHS (0 = free)"></div>
+<div class="row" style="margin-top:10px"><input id="file" type="file" accept="audio/*"><button id="upbtn">Upload</button></div>
+<p class="note">Only upload music you own or have the rights to. Max 20 MB per file.</p><p class="msg" id="umsg"></p></div>
+<div class="box hide" id="earn"><h2>Your earnings</h2><p id="etxt"></p>
+<div class="row"><input id="momo" placeholder="MoMo number or bank details for payouts"><button class="g" id="savemomo">Save payout details</button></div></div>
+<div class="box"><h2>Songs</h2><div id="list"><p class="note">Loading…</p></div><audio id="player" controls class="hide"></audio><p class="msg" id="gmsg"></p></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL="https://srmdowyilgajknldgdjl.supabase.co", SUPABASE_ANON_KEY="sb_publishable_ZN35A4Z_8u1cjIm8T-emKw_48zfAO3B";
+const $=s=>document.querySelector(s), money=p=>p?("GHS "+(p/100).toFixed(2)):"Free";
+if(SUPABASE_URL.startsWith("PASTE")){$("#setup").classList.remove("hide")}
+const sb=supabase.createClient(SUPABASE_URL.startsWith("PASTE")?"https://x.supabase.co":SUPABASE_URL,SUPABASE_ANON_KEY);
+let me=null,tracks=[],sales=[];
+const tok=async()=>(await sb.auth.getSession()).data.session?.access_token;
+async function api(path,opt={}){const t=await tok();const r=await fetch("/api/"+path,{...opt,headers:{Authorization:"Bearer "+t,"Content-Type":"application/json"}});const j=await r.json();if(!r.ok)throw new Error(j.error||"Something went wrong");return j}
+async function load(){
+  const {data}=await sb.auth.getSession();me=data.session?.user||null;
+  $("#who").textContent=me?me.email:"";$("#authbtn").textContent=me?"Log out":"Log in";
+  $("#up").classList.toggle("hide",!me);$("#earn").classList.toggle("hide",!me);
+  const t=await sb.from("tracks").select("*").order("created_at",{ascending:false});tracks=t.data||[];
+  sales=me?((await sb.from("purchases").select("*")).data||[]):[];
+  if(me){const p=await sb.from("profiles").select("momo").eq("id",me.id).maybeSingle();$("#momo").value=p.data?.momo||""}
+  render()}
+function render(){
+  const list=$("#list");list.innerHTML="";
+  if(!tracks.length)list.innerHTML='<p class="note">No songs yet. Be the first to upload.</p>';
+  tracks.forEach(t=>{
+    const owned=me&&(t.owner===me.id||t.price===0||sales.some(s=>s.track_id===t.id&&s.buyer===me.id));
+    const d=document.createElement("div");d.className="t";
+    const info=document.createElement("div");const b=document.createElement("b");b.textContent=t.title;const sm=document.createElement("small");sm.textContent=" "+t.artist+" · "+money(t.price);
+    info.append(b,document.createElement("br"),sm);d.appendChild(info);
+    const btn=(txt,fn,cls)=>{const x=document.createElement("button");x.textContent=txt;if(cls)x.className=cls;x.onclick=fn;d.appendChild(x)};
+    if(owned){btn("Play",()=>play(t,false),"g");btn("Download",()=>play(t,true))}
+    else btn(me?"Buy "+money(t.price):"Log in to buy",()=>me?buy(t):openAuth());
+    list.appendChild(d)});
+  const mine=new Set(tracks.filter(t=>me&&t.owner===me.id).map(t=>t.id));
+  const own=sales.filter(s=>mine.has(s.track_id));const tot=own.reduce((a,s)=>a+s.artist_share,0);
+  $("#etxt").textContent=own.length?own.length+" sale(s). Your share: "+money(tot)+". Payouts are sent to the details below.":"No sales yet."}
+async function play(t,dl){$("#gmsg").textContent="";try{const j=await api("download?track_id="+t.id+(dl?"&dl=1":""));
+  if(dl){location.href=j.url}else{const p=$("#player");p.classList.remove("hide");p.src=j.url;p.play()}}catch(e){$("#gmsg").textContent=e.message}}
+async function buy(t){$("#gmsg").textContent="Opening secure checkout…";try{const j=await api("checkout",{method:"POST",body:JSON.stringify({track_id:t.id})});location.href=j.url}catch(e){$("#gmsg").textContent=e.message}}
+function openAuth(){$("#authbox").classList.toggle("hide",!!me);scrollTo(0,0)}
+$("#authbtn").onclick=async()=>{if(me){await sb.auth.signOut();load()}else openAuth()};
+$("#login").onclick=async()=>{const r=await sb.auth.signInWithPassword({email:$("#em").value,password:$("#pw").value});
+  if(r.error)$("#amsg").textContent=r.error.message;else{$("#authbox").classList.add("hide");load()}};
+$("#signup").onclick=async()=>{const r=await sb.auth.signUp({email:$("#em").value,password:$("#pw").value});
+  $("#amsg").textContent=r.error?r.error.message:(r.data.session?"Welcome!":"Check your email to confirm your account, then log in.");if(r.data?.session){$("#authbox").classList.add("hide");load()}};
+$("#upbtn").onclick=async()=>{const m=$("#umsg"),f=$("#file").files[0],title=$("#ttl").value.trim(),art=$("#art").value.trim(),price=Math.round((+$("#prc").value||0)*100);
+  if(!title||!art||!f){m.textContent="Add a title, artist name and an audio file.";return}
+  if(!f.type.startsWith("audio/")||f.size>20*1024*1024){m.textContent="Choose an audio file under 20 MB.";return}
+  m.textContent="Uploading…";const path=me.id+"/"+Date.now()+"-"+f.name.replace(/[^\w.-]/g,"_");
+  const u=await sb.storage.from("audio").upload(path,f,{contentType:f.type});if(u.error){m.textContent=u.error.message;return}
+  const i=await sb.from("tracks").insert({title,artist:art,price,path});
+  m.textContent=i.error?i.error.message:"Uploaded.";if(!i.error){["#ttl","#art","#prc","#file"].forEach(s=>$(s).value="");load()}};
+$("#savemomo").onclick=async()=>{await sb.from("profiles").upsert({id:me.id,momo:$("#momo").value});$("#etxt").textContent="Payout details saved."};
+(async()=>{const q=new URLSearchParams(location.search),ref=q.get("reference");
+  await load();
+  if(ref&&me){history.replaceState({},"","/");$("#gmsg").textContent="Confirming your payment…";
+    try{await api("verify",{method:"POST",body:JSON.stringify({reference:ref})});$("#gmsg").textContent="Payment confirmed. Your song is ready to play and download.";load()}catch(e){$("#gmsg").textContent=e.message}}})();
+</script></body></html>
