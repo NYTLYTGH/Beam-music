@@ -27,3 +27,7 @@ Netlify > Domain management > Add a domain. Follow its DNS steps (HTTPS is autom
 - Write Terms and a Privacy policy. Artists must confirm they own what they upload, and you need a way to take down infringing songs.
 - You are holding other people's money until payout: get advice on tax and any licensing that applies in Ghana, and keep payouts on a regular schedule. `paid_out` in the purchases table is there to track them.
 - Paid songs cannot be previewed yet (only buyers can play them). A 30-second preview clip is the natural next feature.
+
+## Artist profiles
+Every account can have a public profile page (photo, name, location, About text, website and Instagram), edited from "Edit profile".
+Profiles are stored in Netlify Database (the table is created automatically on deploy from `netlify/database/migrations`) and photos in Netlify Blobs, so no extra Supabase SQL is needed. The profile functions use the same `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` variables to check who is logged in.

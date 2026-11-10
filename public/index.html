@@ -1,88 +1,530 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Beam Music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#17120f;--panel:#241c17;--ink:#f5ede4;--mute:#a99b8d;--acc:#ffb000;--line:#3a2e26}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Georgia,"Iowan Old Style",serif}
-header{display:flex;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.logo{font-size:26px;font-weight:700;letter-spacing:-.03em;flex:1}
-main{max-width:1000px;margin:0 auto;padding:22px}
-button,input{font:inherit;border-radius:8px;border:1px solid var(--line);padding:9px 14px;background:var(--panel);color:var(--ink)}
-button{cursor:pointer;background:var(--acc);color:#1b1206;border:0;font-weight:700}button.g{background:transparent;color:var(--ink);border:1px solid var(--line)}
-button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
-.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:20px}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row input{flex:1;min-width:150px}
-.t{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.t div{flex:1;min-width:180px}.t small,.note{color:var(--mute)}.hide{display:none!important}
-.msg{color:var(--acc);min-height:1.5em}audio{width:100%;margin-top:10px}
-h2{margin:0 0 10px;font-size:20px}
+:root{--bg:#000;--panel:#121212;--card:#181818;--hover:#262626;--raise:#2a2a2a;--ink:#fff;--mute:#b3b3b3;--dim:#7a7a7a;--acc:#ffb000;--acc2:#ffc94d;--line:#2a2a2a;--r:8px;--player:84px}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+a{color:inherit;text-decoration:none}a:hover{text-decoration:underline}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.hide{display:none!important}
+svg{width:22px;height:22px;fill:currentColor;flex:none}
+
+/* layout */
+.app{display:grid;grid-template-columns:280px 1fr;grid-template-rows:1fr var(--player);gap:8px;height:100vh;padding:8px 8px 0}
+.side{display:flex;flex-direction:column;gap:8px;min-height:0}
+.panel{background:var(--panel);border-radius:var(--r)}
+.nav{padding:10px 12px}
+.brand{display:flex;align-items:center;gap:10px;padding:8px 12px 14px;font-weight:900;font-size:22px;letter-spacing:-.03em}
+.brand i{width:30px;height:30px;border-radius:50%;background:conic-gradient(from 200deg,var(--acc),#ff5f3a,var(--acc));display:grid;place-items:center}
+.brand i:after{content:"";width:10px;height:10px;border-radius:50%;background:#000}
+.nav a{display:flex;align-items:center;gap:16px;padding:10px 12px;border-radius:6px;color:var(--mute);font-weight:700}
+.nav a:hover{color:var(--ink);text-decoration:none}.nav a.on{color:var(--ink)}
+.lib{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px}
+.lib h3{display:flex;align-items:center;gap:12px;margin:4px 8px 14px;color:var(--mute);font-size:15px}
+.libscroll{overflow:auto;flex:1;margin:0 -4px;padding:0 4px}
+.prompt{background:var(--raise);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.prompt b{display:block;margin-bottom:4px}.prompt p{margin:0 0 14px;color:var(--mute);font-size:13px}
+.li{display:flex;gap:12px;align-items:center;padding:8px;border-radius:6px;cursor:pointer}
+.li:hover{background:var(--hover)}.li .meta{min-width:0}.li b,.li small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li small{color:var(--mute);font-size:13px}
+
+.main{overflow:auto;position:relative;min-height:0}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;padding:14px 24px;background:rgba(18,18,18,.0);transition:background .2s}
+.top.solid{background:rgba(18,18,18,.92);backdrop-filter:blur(8px)}
+.round{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.6);display:grid;place-items:center;color:var(--ink)}
+.round svg{width:18px;height:18px}
+.top .sp{flex:1}
+.searchbox{display:flex;align-items:center;gap:8px;background:var(--raise);border-radius:999px;padding:0 14px;height:44px;width:min(380px,100%)}
+.searchbox input{background:none;border:0;outline:0;flex:1;height:100%}
+.searchbox svg{color:var(--mute)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:10px 22px;font-weight:700;background:var(--ink);color:#000;transition:transform .1s}
+.btn:hover{transform:scale(1.04)}.btn.acc{background:var(--acc)}.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px #727272}
+.btn.ghost:hover{box-shadow:inset 0 0 0 1px var(--ink)}.btn.sm{padding:6px 14px;font-size:13px}.btn.link{background:none;color:var(--mute);padding:10px 12px}.btn.link:hover{color:var(--ink)}
+.me{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.6);border-radius:999px;padding:3px 12px 3px 3px;font-weight:700}
+
+.view{padding:0 24px 40px}
+.hero{margin:-62px -24px 0;padding:90px 24px 24px;background:linear-gradient(hsl(var(--h,35) 55% 32%),var(--panel))}
+.hero h1{margin:0;font-size:32px;letter-spacing:-.02em}
+h2{font-size:24px;margin:30px 0 14px;letter-spacing:-.02em;display:flex;align-items:baseline;justify-content:space-between}
+h2 a{font-size:13px;color:var(--mute);font-weight:700}
+.quick{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:22px}
+.qt{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;cursor:pointer;position:relative;font-weight:700;padding-right:56px;height:64px}
+.qt:hover{background:rgba(255,255,255,.16)}.qt .cover{width:64px;height:64px;border-radius:0;font-size:22px}
+.qt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qt .fab{position:absolute;right:10px;width:42px;height:42px;opacity:0;transform:none}
+.qt:hover .fab,.card:hover .fab{opacity:1}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin:0 -12px}
+.card{padding:12px;border-radius:var(--r);cursor:pointer;position:relative;transition:background .2s}
+.card:hover{background:var(--card)}
+.card .art{position:relative;margin-bottom:10px}
+.card b,.card small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card small{color:var(--mute);font-size:13px;margin-top:2px}
+.card .fab{position:absolute;right:8px;bottom:8px;opacity:0;transform:translateY(8px);transition:.2s}
+.card:hover .fab{transform:none}
+.cover{aspect-ratio:1;width:100%;border-radius:6px;display:grid;place-items:center;font-weight:900;font-size:46px;color:rgba(255,255,255,.88);
+  background:radial-gradient(circle at 25% 20%,hsl(calc(var(--h) + 40) 80% 62%),transparent 55%),linear-gradient(135deg,hsl(var(--h) 70% 42%),hsl(calc(var(--h) + 70) 60% 22%));box-shadow:0 8px 24px rgba(0,0,0,.5);text-shadow:0 2px 12px rgba(0,0,0,.35)}
+.cover.s{width:40px;height:40px;font-size:16px;border-radius:4px;box-shadow:none}
+.cover.m{width:56px;height:56px;font-size:20px;border-radius:4px}
+.av{aspect-ratio:1;width:100%;border-radius:50%;object-fit:cover;display:grid;place-items:center;font-weight:900;font-size:52px;background:linear-gradient(135deg,hsl(var(--h) 45% 40%),hsl(calc(var(--h) + 50) 40% 20%));box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden;color:#fff}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.av.s{width:28px;height:28px;font-size:12px;box-shadow:none}.av.m{width:48px;height:48px;font-size:18px;box-shadow:none}
+.fab{width:48px;height:48px;border-radius:50%;background:var(--acc);color:#000;display:grid;place-items:center;box-shadow:0 8px 16px rgba(0,0,0,.4)}
+.fab:hover{background:var(--acc2);transform:scale(1.05)!important}
+.fab.l{width:56px;height:56px}.fab svg{width:24px;height:24px}
+
+/* artist page */
+.ahead{display:flex;align-items:flex-end;gap:24px;margin:-62px -24px 0;padding:110px 24px 24px;background:linear-gradient(hsl(var(--h) 50% 34%),hsl(var(--h) 40% 18%))}
+.ahead .av{width:220px;flex:none;font-size:90px}
+.eyebrow{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.ahead h1{font-size:clamp(40px,7vw,92px);line-height:1;margin:6px 0 14px;letter-spacing:-.04em;font-weight:900;word-break:break-word}
+.ahead .sub{color:rgba(255,255,255,.85);font-size:14px}
+.actions{display:flex;align-items:center;gap:20px;padding:24px 0;background:linear-gradient(rgba(0,0,0,.25),transparent 200px);margin:0 -24px;padding-left:24px;padding-right:24px}
+.about{position:relative;border-radius:var(--r);overflow:hidden;background:var(--card);max-width:720px;cursor:default}
+.about .bg{height:220px;background:radial-gradient(circle at 70% 30%,hsl(var(--h) 60% 45%),transparent 60%),linear-gradient(135deg,hsl(calc(var(--h) + 40) 40% 22%),#181818)}
+.about .bg img{width:100%;height:100%;object-fit:cover;opacity:.85}
+.about .txt{padding:22px 24px 26px}
+.about p{white-space:pre-wrap;color:var(--mute);margin:0 0 16px;font-size:16px}
+.about .links{display:flex;gap:18px;flex-wrap:wrap;font-weight:700;font-size:14px}
+.about .links a{display:inline-flex;gap:6px;align-items:center}
+.about .links svg{width:18px;height:18px}
+.empty{color:var(--mute);padding:20px 0}
+
+/* track table */
+.tt{width:100%;border-collapse:collapse;margin-top:4px}
+.tt th{text-align:left;color:var(--mute);font-weight:500;font-size:13px;border-bottom:1px solid var(--line);padding:8px}
+.tt td{padding:8px;color:var(--mute);font-size:14px;vertical-align:middle}
+.tt tr.r{border-radius:6px}.tt tr.r:hover td{background:rgba(255,255,255,.07)}
+.tt tr.r td:first-child{border-radius:6px 0 0 6px;width:44px;text-align:center}.tt tr.r td:last-child{border-radius:0 6px 6px 0;text-align:right;white-space:nowrap}
+.tt .n{font-variant-numeric:tabular-nums}.tt .pi{display:none}
+.tt tr.r:hover .n{display:none}.tt tr.r:hover .pi{display:inline-grid}
+.tt .pi{color:var(--ink)}.tt .pi svg{width:16px;height:16px}
+.tt .tc{display:flex;gap:12px;align-items:center;min-width:0}
+.tt .tc b{display:block;color:var(--ink);font-weight:500;font-size:15px}
+.tt tr.playing .tc b,.tt tr.playing .n{color:var(--acc)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(255,255,255,.1);color:var(--ink)}
+.tag.free{background:rgba(255,176,0,.15);color:var(--acc)}
+.icob{color:var(--mute);display:inline-grid;place-items:center;padding:6px;border-radius:50%}.icob:hover{color:var(--ink)}
+.icob svg{width:18px;height:18px}
+
+/* forms */
+.form{max-width:560px;display:grid;gap:14px;margin-top:20px}
+label{display:grid;gap:6px;font-size:13px;font-weight:700}
+.in{background:var(--raise);border:1px solid transparent;border-radius:6px;padding:12px 14px;width:100%;outline:0}
+.in:focus{border-color:#535353;background:#333}
+textarea.in{min-height:140px;resize:vertical;line-height:1.5}
+.note{color:var(--mute);font-size:13px}.msg{color:var(--acc);min-height:1.4em;font-weight:600}
+.stat{display:flex;gap:16px;flex-wrap:wrap;margin-top:18px}
+.stat div{background:var(--card);border-radius:var(--r);padding:18px 22px;min-width:180px}
+.stat small{color:var(--mute);display:block}.stat b{font-size:28px;letter-spacing:-.02em}
+.drop{display:flex;align-items:center;gap:14px;background:var(--raise);border:1px dashed #555;border-radius:6px;padding:14px;cursor:pointer}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);display:grid;place-items:center;padding:16px}
+.dlg{background:#282828;border-radius:var(--r);width:min(540px,100%);padding:24px;max-height:92vh;overflow:auto;box-shadow:0 16px 40px rgba(0,0,0,.6)}
+.dlg h3{margin:0 0 18px;font-size:24px;display:flex;justify-content:space-between;align-items:center}
+.dlg .in{background:#3e3e3e}
+.editgrid{display:grid;grid-template-columns:180px 1fr;gap:18px}
+.avpick{position:relative;cursor:pointer;border-radius:50%}
+.avpick .ov{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.6);display:grid;place-items:center;text-align:center;font-weight:700;font-size:13px;opacity:0;transition:.2s}
+.avpick:hover .ov,.avpick:focus-within .ov{opacity:1}
+.auth{text-align:center}.auth .in{text-align:left}
+.auth .logo{display:inline-flex;margin-bottom:8px}
+
+/* player */
+.player{grid-column:1/-1;display:grid;grid-template-columns:1fr 2fr 1fr;align-items:center;gap:16px;padding:0 10px}
+.np{display:flex;align-items:center;gap:14px;min-width:0}
+.np .meta{min-width:0}.np b,.np small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.np b{font-size:14px;font-weight:600}.np small{font-size:12px;color:var(--mute)}
+.ctl{display:flex;flex-direction:column;align-items:center;gap:6px}
+.ctl .bt{display:flex;align-items:center;gap:22px}
+.ctl .bt button{color:var(--mute)}.ctl .bt button:hover{color:var(--ink)}
+.ctl .pp{width:34px;height:34px;border-radius:50%;background:var(--ink)!important;color:#000!important;display:grid;place-items:center}
+.ctl .pp svg{width:18px;height:18px}.ctl .bt svg{width:18px;height:18px}
+.prog{display:flex;align-items:center;gap:8px;width:100%;max-width:620px;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:4px;border-radius:2px;background:linear-gradient(to right,var(--ink) var(--p,0%),#4d4d4d var(--p,0%));cursor:pointer;margin:0}
+input[type=range]:hover{background:linear-gradient(to right,var(--acc) var(--p,0%),#4d4d4d var(--p,0%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;opacity:0}
+input[type=range]:hover::-webkit-slider-thumb{opacity:1}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:#fff}
+.right{display:flex;justify-content:flex-end;align-items:center;gap:10px;color:var(--mute)}
+.right input{max-width:110px}
+.toast{position:fixed;left:50%;bottom:calc(var(--player) + 24px);transform:translateX(-50%);background:#fff;color:#000;padding:10px 18px;border-radius:8px;font-weight:600;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.5);max-width:90vw}
+.mnav{display:none}
+
+@media (max-width:820px){
+  :root{--player:64px}
+  body{overflow:auto}
+  .app{grid-template-columns:1fr;grid-template-rows:1fr var(--player) 60px;padding:0;gap:0;height:100dvh}
+  .side{display:none}.panel.main{border-radius:0}
+  .player{grid-template-columns:1fr auto;background:#1d1d1d;margin:0 6px;border-radius:8px}
+  .ctl .prog,.ctl .bt .sec,.right{display:none}
+  .mnav{display:flex;justify-content:space-around;align-items:center;background:linear-gradient(transparent,#000 40%)}
+  .mnav a{display:grid;justify-items:center;font-size:11px;color:var(--mute);gap:2px}.mnav a.on{color:var(--ink)}
+  .ahead{flex-direction:column;align-items:flex-start}.ahead .av{width:160px}
+  .editgrid{grid-template-columns:1fr}.avpick{width:150px;margin:0 auto}
+  .tt .hm{display:none}
+  .view{padding:0 16px 30px}.hero,.ahead,.actions{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px}
+  .top{padding:12px 16px}
+  .toast{bottom:140px}
+}
 </style></head><body>
-<header><div class="logo">Beam Music</div><span id="who" class="note"></span><button id="authbtn">Log in</button></header>
-<main>
-<div class="box hide" id="setup"><b>Setup needed:</b> put your Supabase URL and anon key at the top of the script in public/index.html (see README).</div>
-<div class="box hide" id="authbox"><h2>Join or log in</h2><div class="row">
-<input id="em" type="email" placeholder="Email" autocomplete="email"><input id="pw" type="password" placeholder="Password (8+ characters)" autocomplete="current-password">
-<button id="login">Log in</button><button class="g" id="signup">Create account</button></div><p class="msg" id="amsg"></p></div>
-<div class="box hide" id="up"><h2>Upload a song</h2><div class="row">
-<input id="ttl" placeholder="Song title"><input id="art" placeholder="Artist name">
-<input id="prc" type="number" min="0" step="0.5" placeholder="Price in GHS (0 = free)"></div>
-<div class="row" style="margin-top:10px"><input id="file" type="file" accept="audio/*"><button id="upbtn">Upload</button></div>
-<p class="note">Only upload music you own or have the rights to. Max 20 MB per file.</p><p class="msg" id="umsg"></p></div>
-<div class="box hide" id="earn"><h2>Your earnings</h2><p id="etxt"></p>
-<div class="row"><input id="momo" placeholder="MoMo number or bank details for payouts"><button class="g" id="savemomo">Save payout details</button></div></div>
-<div class="box"><h2>Songs</h2><div id="list"><p class="note">Loading…</p></div><audio id="player" controls class="hide"></audio><p class="msg" id="gmsg"></p></div>
-</main>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M12 3 2 11h3v9h6v-6h2v6h6v-9h3z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path d="M10.5 3a7.5 7.5 0 0 1 5.96 12.05l4.74 4.74-1.41 1.41-4.74-4.74A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"/></symbol>
+  <symbol id="i-lib" viewBox="0 0 24 24"><path d="M4 3h2v18H4zm5 0h2v18H9zm4.6 1.2 1.9-.6 5.4 16.2-1.9.6z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h13v3h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm2 1v11h14V9H5V7zm0-1h11V6H5zm10 6h3v3h-3z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15a.5.5 0 0 0 .76.43l12.2-7.5a.5.5 0 0 0 0-.86L7.76 4.07A.5.5 0 0 0 7 4.5z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 5h2v14H6zm3.5 7L19 5v14z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM5 5l9.5 7L5 19z"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M3 9h4l5-4v14l-5-4H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path d="M11 3h2v10.17l3.59-3.58L18 11l-6 6-6-6 1.41-1.41L11 13.17zM5 19h14v2H5z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15.4 5.4 14 4l-8 8 8 8 1.4-1.4L8.8 12z"/></symbol>
+  <symbol id="i-fwd" viewBox="0 0 24 24"><path d="M8.6 5.4 10 4l8 8-8 8-1.4-1.4 6.6-6.6z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-9 2.2-9 5v3h18v-3c0-2.8-4.6-5-9-5z"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="m16.6 3.4 4 4L8 20H4v-4zM15.2 6.2 6 15.4V18h2.6l9.2-9.2z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7zm0 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a1 1 0 1 1 1.4 1.4L12 13.4a1 1 0 0 1-1.4 0zM8.5 19.5a4 4 0 0 1-2.8-6.8l2.1-2.1 1.4 1.4-2.1 2.1a2 2 0 0 0 2.8 2.8l2.1-2.1 1.4 1.4-2.1 2.1a4 4 0 0 1-2.8 1.2zm8.4-5.6-1.4-1.4 2.1-2.1a2 2 0 0 0-2.8-2.8l-2.1 2.1-1.4-1.4 2.1-2.1a4 4 0 0 1 5.6 5.6z"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm5 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM17.3 5.6a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="side">
+    <nav class="panel nav" aria-label="Main">
+      <a class="brand" href="#/"><i></i>Beam Music</a>
+      <a href="#/" data-nav="home"><svg><use href="#i-home"/></svg>Home</a>
+      <a href="#/search" data-nav="search"><svg><use href="#i-search"/></svg>Search</a>
+    </nav>
+    <section class="panel lib">
+      <h3><svg><use href="#i-lib"/></svg><a href="#/library">Your Library</a></h3>
+      <div class="libscroll" id="sidelib"></div>
+    </section>
+  </aside>
+
+  <main class="panel main" id="main">
+    <div class="top" id="top">
+      <button class="round" onclick="history.back()" aria-label="Go back"><svg><use href="#i-back"/></svg></button>
+      <button class="round" onclick="history.forward()" aria-label="Go forward"><svg><use href="#i-fwd"/></svg></button>
+      <div class="sp" id="topmid"></div>
+      <div id="topright"></div>
+    </div>
+    <div class="view" id="view"></div>
+  </main>
+
+  <footer class="player" id="player">
+    <div class="np" id="np"></div>
+    <div class="ctl">
+      <div class="bt">
+        <button class="sec" id="prev" aria-label="Previous"><svg><use href="#i-prev"/></svg></button>
+        <button class="pp" id="pp" aria-label="Play"><svg><use href="#i-play"/></svg></button>
+        <button class="sec" id="next" aria-label="Next"><svg><use href="#i-next"/></svg></button>
+      </div>
+      <div class="prog"><span id="cur">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek"><span id="dur">0:00</span></div>
+    </div>
+    <div class="right">
+      <button class="icob hide" id="dlnow" aria-label="Download this song"><svg><use href="#i-dl"/></svg></button>
+      <svg><use href="#i-vol"/></svg><input type="range" id="vol" min="0" max="100" value="80" style="--p:80%" aria-label="Volume">
+    </div>
+  </footer>
+
+  <nav class="mnav" aria-label="Mobile">
+    <a href="#/" data-nav="home"><svg><use href="#i-home"/></svg>Home</a>
+    <a href="#/search" data-nav="search"><svg><use href="#i-search"/></svg>Search</a>
+    <a href="#/library" data-nav="library"><svg><use href="#i-lib"/></svg>Library</a>
+    <a href="#/me" data-nav="me"><svg><use href="#i-user"/></svg>Profile</a>
+  </nav>
+</div>
+
+<div class="modal hide" id="authm" role="dialog" aria-modal="true" aria-labelledby="authttl">
+  <div class="dlg auth">
+    <h3 id="authttl"><span>Log in to Beam</span><button class="icob" data-close aria-label="Close"><svg><use href="#i-x"/></svg></button></h3>
+    <div class="form" style="margin:0 auto">
+      <input class="in" id="em" type="email" placeholder="Email address" autocomplete="email">
+      <input class="in" id="pw" type="password" placeholder="Password (8+ characters)" autocomplete="current-password">
+      <button class="btn acc" id="login">Log in</button>
+      <button class="btn ghost" id="signup">Create a free account</button>
+      <p class="msg" id="amsg"></p>
+    </div>
+  </div>
+</div>
+
+<div class="modal hide" id="editm" role="dialog" aria-modal="true" aria-labelledby="editttl">
+  <div class="dlg">
+    <h3 id="editttl"><span>Profile details</span><button class="icob" data-close aria-label="Close"><svg><use href="#i-x"/></svg></button></h3>
+    <div class="editgrid">
+      <div>
+        <label class="avpick" for="avfile" title="Choose photo"><div class="av" id="avprev"></div><div class="ov"><span><svg><use href="#i-pen"/></svg><br>Choose photo</span></div></label>
+        <input type="file" id="avfile" accept="image/jpeg,image/png,image/webp" class="hide">
+        <button class="btn link sm hide" id="avremove" style="width:100%;margin-top:6px">Remove photo</button>
+      </div>
+      <div style="display:grid;gap:12px;align-content:start">
+        <label>Name<input class="in" id="pname" maxlength="60" placeholder="Artist or display name"></label>
+        <label>Location<input class="in" id="ploc" maxlength="80" placeholder="e.g. Accra, Ghana"></label>
+      </div>
+    </div>
+    <div style="display:grid;gap:12px;margin-top:14px">
+      <label>About<textarea class="in" id="pabout" maxlength="1500" placeholder="Tell listeners who you are, your sound, your story…"></textarea></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label>Website<input class="in" id="pweb" maxlength="200" placeholder="yoursite.com"></label>
+        <label>Instagram<input class="in" id="pig" maxlength="60" placeholder="@handle"></label>
+      </div>
+      <p class="msg" id="pmsg"></p>
+      <div style="display:flex;justify-content:flex-end"><button class="btn" id="psave">Save</button></div>
+    </div>
+  </div>
+</div>
+
+<audio id="audio" preload="none"></audio>
+<div class="toast hide" id="toast" role="status"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL="https://srmdowyilgajknldgdjl.supabase.co", SUPABASE_ANON_KEY="sb_publishable_ZN35A4Z_8u1cjIm8T-emKw_48zfAO3B";
 const $=s=>document.querySelector(s), money=p=>p?("GHS "+(p/100).toFixed(2)):"Free";
-if(SUPABASE_URL.startsWith("PASTE")){$("#setup").classList.remove("hide")}
-const sb=supabase.createClient(SUPABASE_URL.startsWith("PASTE")?"https://x.supabase.co":SUPABASE_URL,SUPABASE_ANON_KEY);
-let me=null,tracks=[],sales=[];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ico=n=>`<svg><use href="#i-${n}"/></svg>`;
+const hue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))>>>0;return h%360};
+const initial=s=>esc((String(s||"?").trim()[0]||"?").toUpperCase());
+const fmt=s=>!isFinite(s)?"0:00":Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let me=null,tracks=[],sales=[],profiles=new Map(),queue=[],qi=-1,current=null;
 const tok=async()=>(await sb.auth.getSession()).data.session?.access_token;
-async function api(path,opt={}){const t=await tok();const r=await fetch("/api/"+path,{...opt,headers:{Authorization:"Bearer "+t,"Content-Type":"application/json"}});const j=await r.json();if(!r.ok)throw new Error(j.error||"Something went wrong");return j}
+async function api(path,opt={}){const t=await tok();const r=await fetch("/api/"+path,{...opt,headers:{Authorization:"Bearer "+t,"Content-Type":"application/json",...(opt.headers||{})}});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Something went wrong");return j}
+function toast(m,ms=3200){const t=$("#toast");t.textContent=m;t.classList.remove("hide");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.add("hide"),ms)}
+
+/* ---------- data ---------- */
+const owned=t=>!!me&&(t.owner===me.id||t.price===0||sales.some(s=>s.track_id===t.id&&s.buyer===me.id));
+const prof=id=>profiles.get(id)||null;
+function artistName(id){const p=prof(id);if(p?.displayName)return p.displayName;const t=tracks.find(t=>t.owner===id);return t?t.artist:"Artist"}
+function avatar(id,cls=""){const p=prof(id),n=artistName(id);
+  return `<div class="av ${cls}" style="--h:${hue(id)}">${p?.avatarVersion?`<img src="/api/avatar?id=${encodeURIComponent(id)}&v=${p.avatarVersion}" alt="" loading="lazy">`:initial(n)}</div>`}
+const cover=(t,cls="")=>`<div class="cover ${cls}" style="--h:${hue(t.id)}" aria-hidden="true">${initial(t.title)}</div>`;
+function artists(){const ids=[...new Set(tracks.map(t=>t.owner))];for(const p of profiles.values())if(p.displayName&&!ids.includes(p.userId))ids.push(p.userId);return ids}
+
 async function load(){
   const {data}=await sb.auth.getSession();me=data.session?.user||null;
-  $("#who").textContent=me?me.email:"";$("#authbtn").textContent=me?"Log out":"Log in";
-  $("#up").classList.toggle("hide",!me);$("#earn").classList.toggle("hide",!me);
-  const t=await sb.from("tracks").select("*").order("created_at",{ascending:false});tracks=t.data||[];
-  sales=me?((await sb.from("purchases").select("*")).data||[]):[];
-  if(me){const p=await sb.from("profiles").select("momo").eq("id",me.id).maybeSingle();$("#momo").value=p.data?.momo||""}
-  render()}
-function render(){
-  const list=$("#list");list.innerHTML="";
-  if(!tracks.length)list.innerHTML='<p class="note">No songs yet. Be the first to upload.</p>';
-  tracks.forEach(t=>{
-    const owned=me&&(t.owner===me.id||t.price===0||sales.some(s=>s.track_id===t.id&&s.buyer===me.id));
-    const d=document.createElement("div");d.className="t";
-    const info=document.createElement("div");const b=document.createElement("b");b.textContent=t.title;const sm=document.createElement("small");sm.textContent=" "+t.artist+" · "+money(t.price);
-    info.append(b,document.createElement("br"),sm);d.appendChild(info);
-    const btn=(txt,fn,cls)=>{const x=document.createElement("button");x.textContent=txt;if(cls)x.className=cls;x.onclick=fn;d.appendChild(x)};
-    if(owned){btn("Play",()=>play(t,false),"g");btn("Download",()=>play(t,true))}
-    else btn(me?"Buy "+money(t.price):"Log in to buy",()=>me?buy(t):openAuth());
-    list.appendChild(d)});
-  const mine=new Set(tracks.filter(t=>me&&t.owner===me.id).map(t=>t.id));
-  const own=sales.filter(s=>mine.has(s.track_id));const tot=own.reduce((a,s)=>a+s.artist_share,0);
-  $("#etxt").textContent=own.length?own.length+" sale(s). Your share: "+money(tot)+". Payouts are sent to the details below.":"No sales yet."}
-async function play(t,dl){$("#gmsg").textContent="";try{const j=await api("download?track_id="+t.id+(dl?"&dl=1":""));
-  if(dl){location.href=j.url}else{const p=$("#player");p.classList.remove("hide");p.src=j.url;p.play()}}catch(e){$("#gmsg").textContent=e.message}}
-async function buy(t){$("#gmsg").textContent="Opening secure checkout…";try{const j=await api("checkout",{method:"POST",body:JSON.stringify({track_id:t.id})});location.href=j.url}catch(e){$("#gmsg").textContent=e.message}}
-function openAuth(){$("#authbox").classList.toggle("hide",!!me);scrollTo(0,0)}
-$("#authbtn").onclick=async()=>{if(me){await sb.auth.signOut();load()}else openAuth()};
+  const [t,s,p]=await Promise.all([
+    sb.from("tracks").select("*").order("created_at",{ascending:false}),
+    me?sb.from("purchases").select("*"):Promise.resolve({data:[]}),
+    fetch("/api/profiles").then(r=>r.ok?r.json():[]).catch(()=>[])]);
+  tracks=t.data||[];sales=s.data||[];profiles=new Map((p||[]).map(x=>[x.userId,x]));
+  renderShell();route()}
+
+/* ---------- shell ---------- */
+function renderShell(){
+  const tr=$("#topright");
+  if(me){tr.innerHTML=`<a class="me" href="#/artist/${me.id}" title="Your profile">${avatar(me.id,"s")}<span>${esc(prof(me.id)?.displayName||"Profile")}</span></a>`}
+  else tr.innerHTML=`<button class="btn link" data-auth="signup">Sign up</button><button class="btn" data-auth="login">Log in</button>`;
+  const lib=$("#sidelib");
+  if(!me){lib.innerHTML=`<div class="prompt"><b>Build your library</b><p>Log in to buy, download and upload music, and create your artist profile.</p><button class="btn sm" data-auth="login">Log in</button></div>`;return}
+  const p=prof(me.id);let h="";
+  if(!p?.displayName||!p?.about)h+=`<div class="prompt"><b>Set up your profile</b><p>Add a photo, name and an About section so listeners get to know you.</p><button class="btn sm" data-edit>Edit profile</button></div>`;
+  h+=`<a class="li" href="#/artist/${me.id}">${avatar(me.id,"m")}<div class="meta"><b>${esc(artistName(me.id))}</b><small>Your profile</small></div></a>`;
+  h+=`<a class="li" href="#/upload"><div class="cover m" style="--h:40">${ico("plus")}</div><div class="meta"><b>Upload a song</b><small>Share or sell your music</small></div></a>`;
+  h+=`<a class="li" href="#/earnings"><div class="cover m" style="--h:150">${ico("wallet")}</div><div class="meta"><b>Earnings</b><small>Sales and payouts</small></div></a>`;
+  const mine=libraryTracks();
+  mine.slice(0,40).forEach(t=>{h+=`<div class="li" data-play="${t.id}">${cover(t,"m")}<div class="meta"><b>${esc(t.title)}</b><small>Song · ${esc(t.artist)}</small></div></div>`});
+  h+=`<button class="btn link sm" id="logout" style="margin-top:8px">Log out</button>`;
+  lib.innerHTML=h}
+function libraryTracks(){if(!me)return[];return tracks.filter(t=>t.owner===me.id||sales.some(s=>s.track_id===t.id&&s.buyer===me.id))}
+
+/* ---------- views ---------- */
+function trackTable(list,{showArtist=true}={}){
+  if(!list.length)return `<p class="empty">No songs here yet.</p>`;
+  return `<table class="tt"><thead><tr><th>#</th><th>Title</th><th class="hm">Price</th><th></th></tr></thead><tbody>`+
+  list.map((t,i)=>{const o=owned(t);return `<tr class="r${current?.id===t.id?" playing":""}" data-row="${t.id}">
+    <td><span class="n">${i+1}</span><button class="pi icob" data-play="${t.id}" aria-label="Play ${esc(t.title)}">${ico("play")}</button></td>
+    <td><div class="tc">${cover(t,"s")}<div><b>${esc(t.title)}</b>${showArtist?`<a href="#/artist/${t.owner}">${esc(t.artist)}</a>`:""}</div></div></td>
+    <td class="hm"><span class="tag${t.price?"":" free"}">${money(t.price)}</span></td>
+    <td>${o?`<button class="icob" data-dl="${t.id}" aria-label="Download ${esc(t.title)}">${ico("dl")}</button>`:`<button class="btn acc sm" data-buy="${t.id}">${me?"Buy "+money(t.price):"Log in to buy"}</button>`}</td></tr>`}).join("")+`</tbody></table>`}
+function trackCards(list){return `<div class="grid">`+list.map(t=>`<div class="card" data-play="${t.id}" tabindex="0">
+  <div class="art">${cover(t)}<button class="fab" data-play="${t.id}" aria-label="Play ${esc(t.title)}">${ico("play")}</button></div>
+  <b>${esc(t.title)}</b><small><a href="#/artist/${t.owner}">${esc(t.artist)}</a> · ${money(t.price)}</small></div>`).join("")+`</div>`}
+function artistCards(ids){return `<div class="grid">`+ids.map(id=>`<a class="card" href="#/artist/${id}" style="text-decoration:none">
+  <div class="art">${avatar(id)}</div><b>${esc(artistName(id))}</b><small>Artist</small></a>`).join("")+`</div>`}
+
+function vHome(){
+  const hr=new Date().getHours(),greet=hr<12?"Good morning":hr<18?"Good afternoon":"Good evening";
+  if(!tracks.length)return `<div class="hero"><h1>${greet}</h1></div><p class="empty">No songs yet. ${me?`<a href="#/upload"><b>Upload the first one.</b></a>`:"Log in and be the first to upload."}</p>`;
+  const ids=artists();
+  return `<div class="hero" style="--h:${hue(tracks[0].id)}"><h1>${greet}</h1>
+    <div class="quick">${tracks.slice(0,6).map(t=>`<div class="qt" data-play="${t.id}">${cover(t)}<span>${esc(t.title)}</span><button class="fab" data-play="${t.id}" aria-label="Play ${esc(t.title)}">${ico("play")}</button></div>`).join("")}</div></div>
+    <h2>New releases <a href="#/search">Show all</a></h2>${trackCards(tracks.slice(0,12))}
+    ${ids.length?`<h2>Artists</h2>${artistCards(ids.slice(0,12))}`:""}
+    ${tracks.some(t=>t.price===0)?`<h2>Free to download</h2>${trackCards(tracks.filter(t=>t.price===0).slice(0,12))}`:""}`}
+
+function vSearch(q){
+  q=(q||"").toLowerCase().trim();
+  const ts=q?tracks.filter(t=>(t.title+" "+t.artist+" "+artistName(t.owner)).toLowerCase().includes(q)):tracks;
+  const as=artists().filter(id=>!q||artistName(id).toLowerCase().includes(q));
+  return `<h2 style="margin-top:8px">${q?"Results":"Browse all"}</h2>
+    ${as.length?`<h2 style="font-size:20px">Artists</h2>${artistCards(as.slice(0,12))}`:""}
+    <h2 style="font-size:20px">Songs</h2>${trackTable(ts)}`}
+
+function vLibrary(){
+  if(!me)return `<h2>Your Library</h2><div class="prompt" style="max-width:420px"><b>Log in to see your library</b><p>Songs you buy and upload appear here.</p><button class="btn sm" data-auth="login">Log in</button></div>`;
+  const bought=tracks.filter(t=>t.owner!==me.id&&sales.some(s=>s.track_id===t.id&&s.buyer===me.id)),up=tracks.filter(t=>t.owner===me.id);
+  return `<h2>Your Library</h2><h2 style="font-size:20px">Purchased</h2>${trackTable(bought)}<h2 style="font-size:20px">Your uploads <a href="#/upload">Upload</a></h2>${trackTable(up)}`}
+
+function vArtist(id){
+  const p=prof(id),n=artistName(id),list=tracks.filter(t=>t.owner===id),mine=me&&me.id===id,h=hue(id);
+  if(!p&&!list.length&&!mine)return `<div class="hero"><h1>Artist not found</h1></div><p class="empty">This profile doesn't exist yet.</p>`;
+  const sub=[p?.location?`${esc(p.location)}`:"",`${list.length} song${list.length===1?"":"s"}`].filter(Boolean).join(" • ");
+  const links=[p?.website?`<a href="${esc(p.website)}" target="_blank" rel="noopener nofollow">${ico("link")}${esc(p.website.replace(/^https?:\/\//,"").replace(/\/$/,""))}</a>`:"",
+    p?.instagram?`<a href="https://instagram.com/${encodeURIComponent(p.instagram)}" target="_blank" rel="noopener nofollow">${ico("ig")}@${esc(p.instagram)}</a>`:""].join("");
+  return `<div class="ahead" style="--h:${h}">${avatar(id)}<div><div class="eyebrow">${ico("check")} ${mine?"Your profile":"Artist"}</div><h1>${esc(n)}</h1><div class="sub">${sub}</div></div></div>
+    <div class="actions">${list.length?`<button class="fab l" data-playall="${id}" aria-label="Play all">${ico("play")}</button>`:""}
+      ${mine?`<button class="btn ghost sm" data-edit>${ico("pen")} Edit profile</button><a class="btn ghost sm" href="#/upload" style="text-decoration:none">${ico("plus")} Upload</a>`:""}</div>
+    <h2 style="margin-top:0">Songs</h2>${trackTable(list,{showArtist:false})}
+    <h2>About</h2>
+    <div class="about" style="--h:${h}"><div class="bg">${p?.avatarVersion?`<img src="/api/avatar?id=${encodeURIComponent(id)}&v=${p.avatarVersion}" alt="">`:""}</div>
+      <div class="txt">${p?.about?`<p>${esc(p.about)}</p>`:`<p>${mine?"You haven't written an About section yet.":"This artist hasn't added an About section yet."}</p>`}
+      ${links?`<div class="links">${links}</div>`:""}
+      ${mine&&!p?.about?`<button class="btn sm" data-edit style="margin-top:4px">Add About</button>`:""}</div></div>`}
+
+function vUpload(){
+  if(!me)return `<h2>Upload a song</h2><button class="btn" data-auth="login">Log in to upload</button>`;
+  return `<div class="hero" style="--h:40"><h1>Upload a song</h1><p class="note" style="color:#ddd">Share it for free or set a price. Buyers pay by card or mobile money.</p></div>
+  <div class="form">
+    <label>Song title<input class="in" id="ttl" placeholder="Song title"></label>
+    <label>Artist name<input class="in" id="art" placeholder="Artist name" value="${esc(prof(me.id)?.displayName||"")}"></label>
+    <label>Price in GHS<input class="in" id="prc" type="number" min="0" step="0.5" placeholder="0 = free"></label>
+    <label class="drop" for="file">${ico("plus")}<span id="fname">Choose an audio file (max 20 MB)</span></label><input id="file" type="file" accept="audio/*" class="hide">
+    <p class="note">Only upload music you own or have the rights to.</p>
+    <div><button class="btn acc" id="upbtn">Upload</button></div><p class="msg" id="umsg"></p></div>`}
+
+function vEarnings(){
+  if(!me)return `<h2>Earnings</h2><button class="btn" data-auth="login">Log in</button>`;
+  const mine=new Set(tracks.filter(t=>t.owner===me.id).map(t=>t.id)),own=sales.filter(s=>mine.has(s.track_id)),tot=own.reduce((a,s)=>a+s.artist_share,0);
+  const paid=own.filter(s=>s.paid_out).reduce((a,s)=>a+s.artist_share,0);
+  return `<div class="hero" style="--h:150"><h1>Your earnings</h1>
+    <div class="stat"><div><small>Sales</small><b>${own.length}</b></div><div><small>Your share</small><b>${money(tot)}</b></div><div><small>Awaiting payout</small><b>${money(tot-paid)}</b></div></div></div>
+    <div class="form"><label>Payout details<input class="in" id="momo" placeholder="MoMo number or bank details for payouts"></label>
+    <div><button class="btn" id="savemomo">Save payout details</button></div><p class="msg" id="emsg"></p></div>`}
+
+function route(){
+  const h=location.hash.slice(2),[r,arg]=h.split("/");const v=$("#view"),top=$("#topmid");let key=r||"home";
+  top.innerHTML="";
+  if(r==="search"){top.innerHTML=`<label class="searchbox">${ico("search")}<input id="q" placeholder="What do you want to listen to?" value="${esc(decodeURIComponent(arg||""))}" aria-label="Search"></label>`;
+    v.innerHTML=vSearch(decodeURIComponent(arg||""));const q=$("#q");q.focus();q.setSelectionRange(q.value.length,q.value.length);
+    q.oninput=()=>{history.replaceState(null,"","#/search/"+encodeURIComponent(q.value));v.innerHTML=vSearch(q.value)}}
+  else if(r==="artist"&&arg)v.innerHTML=vArtist(arg);
+  else if(r==="me"){if(me){location.replace("#/artist/"+me.id);return}openAuth("login");v.innerHTML=vHome();key="home"}
+  else if(r==="library")v.innerHTML=vLibrary();
+  else if(r==="upload"){v.innerHTML=vUpload();bindUpload()}
+  else if(r==="earnings"){v.innerHTML=vEarnings();bindEarnings()}
+  else {v.innerHTML=vHome();key="home"}
+  document.querySelectorAll("[data-nav]").forEach(a=>a.classList.toggle("on",a.dataset.nav===key));
+  if(r!=="search")$("#main").scrollTop=0}
+window.addEventListener("hashchange",route);
+$("#main").addEventListener("scroll",e=>$("#top").classList.toggle("solid",e.target.scrollTop>40));
+
+/* ---------- player ---------- */
+const audio=$("#audio");audio.volume=.8;
+function setPP(){const playing=!audio.paused;$("#pp").innerHTML=ico(playing?"pause":"play");$("#pp").setAttribute("aria-label",playing?"Pause":"Play");
+  document.querySelectorAll("[data-playall]").forEach(b=>b.innerHTML=ico(playing&&current&&b.dataset.playall===current.owner?"pause":"play"))}
+function renderNP(){const np=$("#np");if(!current){np.innerHTML=`<span class="note">Pick a song to start listening</span>`;$("#dlnow").classList.add("hide");return}
+  np.innerHTML=`${cover(current,"m")}<div class="meta"><b>${esc(current.title)}</b><small><a href="#/artist/${current.owner}">${esc(current.artist)}</a></small></div>`;
+  $("#dlnow").classList.remove("hide");
+  document.querySelectorAll("tr[data-row]").forEach(r=>r.classList.toggle("playing",r.dataset.row===current.id))}
+async function play(t,list){
+  if(!me){openAuth("login");return}
+  if(!owned(t)){toast("“"+t.title+"” is "+money(t.price)+". Buy it to listen and download.");if(location.hash!=="#/artist/"+t.owner)location.hash="#/artist/"+t.owner;return}
+  if(current?.id===t.id&&audio.src){audio.paused?audio.play():audio.pause();return}
+  queue=(list||tracks).filter(owned);qi=queue.findIndex(x=>x.id===t.id);current=t;renderNP();
+  try{const j=await api("download?track_id="+t.id);audio.src=j.url;await audio.play()}catch(e){toast(e.message)}}
+function step(d){if(!queue.length)return;let i=qi+d;if(i<0||i>=queue.length)return;qi=i;current=null;play(queue[i],queue)}
+$("#pp").onclick=()=>{if(!current){const t=tracks.find(owned);if(t)play(t);else toast(me?"Buy or upload a song to start listening":"Log in to start listening");return}
+  if(!audio.src)return play(current,queue);audio.paused?audio.play():audio.pause()};
+$("#prev").onclick=()=>{if(audio.currentTime>3){audio.currentTime=0}else step(-1)};
+$("#next").onclick=()=>step(1);
+audio.onplay=audio.onpause=setPP;audio.onended=()=>step(1);
+audio.ontimeupdate=()=>{const p=audio.duration?audio.currentTime/audio.duration:0;const s=$("#seek");if(!s.matches(":active"))s.value=p*1000;s.style.setProperty("--p",p*100+"%");$("#cur").textContent=fmt(audio.currentTime);$("#dur").textContent=fmt(audio.duration)};
+$("#seek").oninput=e=>{if(audio.duration)audio.currentTime=e.target.value/1000*audio.duration};
+$("#vol").oninput=e=>{audio.volume=e.target.value/100;e.target.style.setProperty("--p",e.target.value+"%")};
+$("#dlnow").onclick=()=>current&&download(current);
+async function download(t){try{const j=await api("download?track_id="+t.id+"&dl=1");location.href=j.url}catch(e){toast(e.message)}}
+async function buy(t){if(!me)return openAuth("login");toast("Opening secure checkout…");try{const j=await api("checkout",{method:"POST",body:JSON.stringify({track_id:t.id})});location.href=j.url}catch(e){toast(e.message)}}
+
+/* ---------- clicks ---------- */
+const byId=id=>tracks.find(t=>t.id===id);
+document.addEventListener("click",async e=>{
+  const el=e.target.closest("[data-play],[data-buy],[data-dl],[data-auth],[data-edit],[data-close],[data-playall],#logout");if(!el)return;
+  if(el.matches("a[href]")&&!el.dataset.play)return;
+  if(e.target.closest("a[href]")&&el.dataset.play)return; // artist link inside a card
+  e.preventDefault();e.stopPropagation();
+  if(el.dataset.play){const t=byId(el.dataset.play);const ctx=el.closest(".tt")?[...el.closest(".tt").querySelectorAll("tr[data-row]")].map(r=>byId(r.dataset.row)):null;if(t)play(t,ctx)}
+  else if(el.dataset.playall){const list=tracks.filter(t=>t.owner===el.dataset.playall);
+    if(current&&current.owner===el.dataset.playall&&audio.src){audio.paused?audio.play():audio.pause()}else{const t=list.find(owned)||list[0];if(t)play(t,list)}}
+  else if(el.dataset.buy){const t=byId(el.dataset.buy);if(t)buy(t)}
+  else if(el.dataset.dl){const t=byId(el.dataset.dl);if(t)download(t)}
+  else if(el.dataset.auth)openAuth(el.dataset.auth);
+  else if(el.hasAttribute("data-edit"))openEdit();
+  else if(el.hasAttribute("data-close"))el.closest(".modal").classList.add("hide");
+  else if(el.id==="logout"){await sb.auth.signOut();audio.pause();audio.removeAttribute("src");current=null;renderNP();location.hash="#/";load()}});
+document.addEventListener("dblclick",e=>{const r=e.target.closest("tr[data-row]");if(r&&!e.target.closest("button,a")){const t=byId(r.dataset.row);if(t)play(t,[...r.parentNode.children].map(x=>byId(x.dataset.row)))}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".modal").forEach(m=>m.classList.add("hide"));
+  if(e.key==="Enter"&&e.target.matches(".card[data-play]"))e.target.click()});
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.add("hide")}));
+
+/* ---------- auth ---------- */
+function openAuth(mode){$("#amsg").textContent="";$("#authttl span").textContent=mode==="signup"?"Sign up to start listening":"Log in to Beam";$("#authm").classList.remove("hide");$("#em").focus()}
 $("#login").onclick=async()=>{const r=await sb.auth.signInWithPassword({email:$("#em").value,password:$("#pw").value});
-  if(r.error)$("#amsg").textContent=r.error.message;else{$("#authbox").classList.add("hide");load()}};
+  if(r.error)$("#amsg").textContent=r.error.message;else{$("#authm").classList.add("hide");load()}};
 $("#signup").onclick=async()=>{const r=await sb.auth.signUp({email:$("#em").value,password:$("#pw").value});
-  $("#amsg").textContent=r.error?r.error.message:(r.data.session?"Welcome!":"Check your email to confirm your account, then log in.");if(r.data?.session){$("#authbox").classList.add("hide");load()}};
-$("#upbtn").onclick=async()=>{const m=$("#umsg"),f=$("#file").files[0],title=$("#ttl").value.trim(),art=$("#art").value.trim(),price=Math.round((+$("#prc").value||0)*100);
+  $("#amsg").textContent=r.error?r.error.message:(r.data.session?"Welcome!":"Check your email to confirm your account, then log in.");
+  if(r.data?.session){$("#authm").classList.add("hide");await load();openEdit()}};
+$("#pw").addEventListener("keydown",e=>{if(e.key==="Enter")$("#login").click()});
+
+/* ---------- profile editor ---------- */
+function openEdit(){if(!me)return openAuth("login");const p=prof(me.id)||{};
+  $("#pname").value=p.displayName||"";$("#ploc").value=p.location||"";$("#pabout").value=p.about||"";$("#pweb").value=p.website||"";$("#pig").value=p.instagram?"@"+p.instagram:"";
+  $("#pmsg").textContent="";$("#avprev").outerHTML=avatar(me.id).replace('class="av ','id="avprev" class="av ');$("#avremove").classList.toggle("hide",!p.avatarVersion);
+  $("#editm").classList.remove("hide");$("#pname").focus()}
+$("#psave").onclick=async()=>{const m=$("#pmsg");if(!$("#pname").value.trim()){m.textContent="Add a name for your profile.";return}
+  m.textContent="Saving…";
+  try{const p=await api("profiles",{method:"PUT",body:JSON.stringify({displayName:$("#pname").value,location:$("#ploc").value,about:$("#pabout").value,website:$("#pweb").value,instagram:$("#pig").value})});
+    profiles.set(me.id,p);$("#editm").classList.add("hide");renderShell();route();toast("Profile saved")}catch(e){m.textContent=e.message}};
+async function squareJpeg(file,size=480){const img=await createImageBitmap(file);const s=Math.min(img.width,img.height),c=document.createElement("canvas");c.width=c.height=size;
+  c.getContext("2d").drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,size,size);return new Promise(r=>c.toBlob(r,"image/jpeg",.86))}
+$("#avfile").onchange=async e=>{const f=e.target.files[0];if(!f)return;const m=$("#pmsg");
+  if(!/^image\//.test(f.type)){m.textContent="Choose an image file.";return}
+  m.textContent="Uploading photo…";
+  try{const blob=await squareJpeg(f);const t=await tok();const r=await fetch("/api/avatar",{method:"PUT",headers:{Authorization:"Bearer "+t,"Content-Type":"image/jpeg"},body:blob});
+    const j=await r.json();if(!r.ok)throw new Error(j.error||"Upload failed");profiles.set(me.id,{...(prof(me.id)||{}),...j});
+    $("#avprev").outerHTML=avatar(me.id).replace('class="av ','id="avprev" class="av ');$("#avremove").classList.remove("hide");m.textContent="Photo updated.";renderShell();route()}
+  catch(err){m.textContent=err.message}finally{e.target.value=""}};
+$("#avremove").onclick=async()=>{try{const j=await api("avatar",{method:"DELETE"});if(j)profiles.set(me.id,j);
+  $("#avprev").outerHTML=avatar(me.id).replace('class="av ','id="avprev" class="av ');$("#avremove").classList.add("hide");renderShell();route()}catch(e){$("#pmsg").textContent=e.message}};
+
+/* ---------- upload & earnings ---------- */
+function bindUpload(){const b=$("#upbtn");if(!b)return;
+  $("#file").onchange=e=>$("#fname").textContent=e.target.files[0]?.name||"Choose an audio file (max 20 MB)";
+  b.onclick=async()=>{const m=$("#umsg"),f=$("#file").files[0],title=$("#ttl").value.trim(),art=$("#art").value.trim(),price=Math.round((+$("#prc").value||0)*100);
   if(!title||!art||!f){m.textContent="Add a title, artist name and an audio file.";return}
   if(!f.type.startsWith("audio/")||f.size>20*1024*1024){m.textContent="Choose an audio file under 20 MB.";return}
-  m.textContent="Uploading…";const path=me.id+"/"+Date.now()+"-"+f.name.replace(/[^\w.-]/g,"_");
-  const u=await sb.storage.from("audio").upload(path,f,{contentType:f.type});if(u.error){m.textContent=u.error.message;return}
-  const i=await sb.from("tracks").insert({title,artist:art,price,path});
-  m.textContent=i.error?i.error.message:"Uploaded.";if(!i.error){["#ttl","#art","#prc","#file"].forEach(s=>$(s).value="");load()}};
-$("#savemomo").onclick=async()=>{await sb.from("profiles").upsert({id:me.id,momo:$("#momo").value});$("#etxt").textContent="Payout details saved."};
+  m.textContent="Uploading…";b.disabled=true;const path=me.id+"/"+Date.now()+"-"+f.name.replace(/[^\w.-]/g,"_");
+  const u=await sb.storage.from("audio").upload(path,f,{contentType:f.type});if(u.error){m.textContent=u.error.message;b.disabled=false;return}
+  const i=await sb.from("tracks").insert({title,artist:art,price,path});b.disabled=false;
+  if(i.error){m.textContent=i.error.message;return}toast("Uploaded “"+title+"”");await load();location.hash="#/artist/"+me.id}}
+async function bindEarnings(){const b=$("#savemomo");if(!b)return;
+  const p=await sb.from("profiles").select("momo").eq("id",me.id).maybeSingle();$("#momo").value=p.data?.momo||"";
+  b.onclick=async()=>{const r=await sb.from("profiles").upsert({id:me.id,momo:$("#momo").value});$("#emsg").textContent=r.error?r.error.message:"Payout details saved."}}
+
+/* ---------- start ---------- */
+renderNP();
 (async()=>{const q=new URLSearchParams(location.search),ref=q.get("reference");
   await load();
-  if(ref&&me){history.replaceState({},"","/");$("#gmsg").textContent="Confirming your payment…";
-    try{await api("verify",{method:"POST",body:JSON.stringify({reference:ref})});$("#gmsg").textContent="Payment confirmed. Your song is ready to play and download.";load()}catch(e){$("#gmsg").textContent=e.message}}})();
+  if(ref&&me){history.replaceState({},"","/"+location.hash);toast("Confirming your payment…",8000);
+    try{await api("verify",{method:"POST",body:JSON.stringify({reference:ref})});toast("Payment confirmed. Your song is ready to play and download.",6000);load()}catch(e){toast(e.message)}}})();
 </script></body></html>
