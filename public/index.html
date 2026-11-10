@@ -110,6 +110,8 @@ h2 a{font-size:13px;color:var(--mute);font-weight:700}
 .tag.free{background:rgba(255,176,0,.15);color:var(--acc)}
 .icob{color:var(--mute);display:inline-grid;place-items:center;padding:6px;border-radius:50%}.icob:hover{color:var(--ink)}
 .icob svg{width:18px;height:18px}
+.btn.danger{color:#f15e6c;box-shadow:inset 0 0 0 1px #f15e6c;display:inline-flex;align-items:center;gap:6px}.btn.danger svg{width:16px;height:16px;fill:currentColor}
+.btn.danger.sure{background:#e22134;color:#fff}
 
 /* forms */
 .form{max-width:560px;display:grid;gap:14px;margin-top:20px}
@@ -194,6 +196,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radiu
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7zm0 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a1 1 0 1 1 1.4 1.4L12 13.4a1 1 0 0 1-1.4 0zM8.5 19.5a4 4 0 0 1-2.8-6.8l2.1-2.1 1.4 1.4-2.1 2.1a2 2 0 0 0 2.8 2.8l2.1-2.1 1.4 1.4-2.1 2.1a4 4 0 0 1-2.8 1.2zm8.4-5.6-1.4-1.4 2.1-2.1a2 2 0 0 0-2.8-2.8l-2.1 2.1-1.4-1.4 2.1-2.1a4 4 0 0 1 5.6 5.6z"/></symbol>
   <symbol id="i-ig" viewBox="0 0 24 24"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm5 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM17.3 5.6a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M9 3h6l1 1h4v2H4V4h4zM6 8h12l-1 13H7zm3 2v9h2v-9zm4 0v9h2v-9z"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></symbol>
 </svg>
 
@@ -287,6 +290,22 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radiu
   </div>
 </div>
 
+<div class="modal hide" id="songm" role="dialog" aria-modal="true" aria-labelledby="songttl">
+  <div class="dlg">
+    <h3 id="songttl"><span>Edit song</span><button class="icob" data-close aria-label="Close"><svg><use href="#i-x"/></svg></button></h3>
+    <div style="display:grid;gap:12px">
+      <label>Song title<input class="in" id="sttl" maxlength="120"></label>
+      <label>Artist name<input class="in" id="sart" maxlength="120"></label>
+      <label>Price in GHS<input class="in" id="sprc" type="number" min="0" step="0.5" placeholder="0 = free"></label>
+      <p class="msg" id="smsg"></p>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <button class="btn ghost sm danger" id="sdel"><svg><use href="#i-trash"/></svg> Delete song</button>
+        <button class="btn" id="ssave">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <audio id="audio" preload="none"></audio>
 <div class="toast hide" id="toast" role="status"></div>
 
@@ -357,7 +376,7 @@ function trackTable(list,{showArtist=true}={}){
     <td><span class="n">${i+1}</span><button class="pi icob" data-play="${t.id}" aria-label="Play ${esc(t.title)}">${ico("play")}</button></td>
     <td><div class="tc">${cover(t,"s")}<div><b>${esc(t.title)}</b>${showArtist?`<a href="#/artist/${t.owner}">${esc(t.artist)}</a>`:""}</div></div></td>
     <td class="hm"><span class="tag${t.price?"":" free"}">${money(t.price)}</span></td>
-    <td>${o?`<button class="icob" data-dl="${t.id}" aria-label="Download ${esc(t.title)}">${ico("dl")}</button>`:`<button class="btn acc sm" data-buy="${t.id}">${me?"Buy "+money(t.price):"Log in to buy"}</button>`}</td></tr>`}).join("")+`</tbody></table>`}
+    <td style="white-space:nowrap">${me&&t.owner===me.id?`<button class="icob" data-songedit="${t.id}" aria-label="Edit ${esc(t.title)}" title="Edit or delete">${ico("pen")}</button>`:""}${o?`<button class="icob" data-dl="${t.id}" aria-label="Download ${esc(t.title)}">${ico("dl")}</button>`:`<button class="btn acc sm" data-buy="${t.id}">${me?"Buy "+money(t.price):"Log in to buy"}</button>`}</td></tr>`}).join("")+`</tbody></table>`}
 function trackCards(list){return `<div class="grid">`+list.map(t=>`<div class="card" data-play="${t.id}" tabindex="0">
   <div class="art">${cover(t)}<button class="fab" data-play="${t.id}" aria-label="Play ${esc(t.title)}">${ico("play")}</button></div>
   <b>${esc(t.title)}</b><small><a href="#/artist/${t.owner}">${esc(t.artist)}</a> · ${money(t.price)}</small></div>`).join("")+`</div>`}
@@ -470,7 +489,7 @@ async function buy(t){if(!me)return openAuth("login");toast("Opening secure chec
 /* ---------- clicks ---------- */
 const byId=id=>tracks.find(t=>t.id===id);
 document.addEventListener("click",async e=>{
-  const el=e.target.closest("[data-play],[data-buy],[data-dl],[data-auth],[data-edit],[data-close],[data-playall],#logout");if(!el)return;
+  const el=e.target.closest("[data-play],[data-buy],[data-dl],[data-auth],[data-edit],[data-songedit],[data-close],[data-playall],#logout");if(!el)return;
   if(el.matches("a[href]")&&!el.dataset.play)return;
   if(e.target.closest("a[href]")&&el.dataset.play)return; // artist link inside a card
   e.preventDefault();e.stopPropagation();
@@ -481,6 +500,7 @@ document.addEventListener("click",async e=>{
   else if(el.dataset.dl){const t=byId(el.dataset.dl);if(t)download(t)}
   else if(el.dataset.auth)openAuth(el.dataset.auth);
   else if(el.hasAttribute("data-edit"))openEdit();
+  else if(el.dataset.songedit){const t=byId(el.dataset.songedit);if(t)openSong(t)}
   else if(el.hasAttribute("data-close"))el.closest(".modal").classList.add("hide");
   else if(el.id==="logout"){await sb.auth.signOut();audio.pause();audio.removeAttribute("src");current=null;renderNP();location.hash="#/";load()}});
 document.addEventListener("dblclick",e=>{const r=e.target.closest("tr[data-row]");if(r&&!e.target.closest("button,a")){const t=byId(r.dataset.row);if(t)play(t,[...r.parentNode.children].map(x=>byId(x.dataset.row)))}});
@@ -532,6 +552,26 @@ $("#avfile").onchange=async e=>{const f=e.target.files[0];if(!f)return;const m=$
   catch(err){m.textContent=err.message}finally{e.target.value=""}};
 $("#avremove").onclick=async()=>{try{const j=await api("avatar",{method:"DELETE"});if(j)profiles.set(me.id,j);
   $("#avprev").outerHTML=avatar(me.id).replace('class="av ','id="avprev" class="av ');$("#avremove").classList.add("hide");renderShell();route()}catch(e){$("#pmsg").textContent=e.message}};
+
+/* ---------- edit / delete a song ---------- */
+let editing=null;
+function openSong(t){editing=t;$("#sttl").value=t.title;$("#sart").value=t.artist;$("#sprc").value=t.price?t.price/100:"";
+  $("#smsg").textContent="";const d=$("#sdel");d.classList.remove("sure");d.innerHTML=ico("trash")+" Delete song";d.disabled=false;
+  $("#songm").classList.remove("hide");$("#sttl").focus()}
+$("#ssave").onclick=async()=>{if(!editing)return;const m=$("#smsg"),title=$("#sttl").value.trim(),artist=$("#sart").value.trim();
+  if(!title||!artist){m.textContent="Add a title and artist name.";return}
+  m.textContent="Saving…";
+  try{const t=await api("track?id="+encodeURIComponent(editing.id),{method:"PATCH",body:JSON.stringify({title,artist,price:Math.round((+$("#sprc").value||0)*100)})});
+    tracks=tracks.map(x=>x.id===t.id?t:x);if(current?.id===t.id){current=t;renderNP()}queue=queue.map(x=>x?.id===t.id?t:x);
+    $("#songm").classList.add("hide");renderShell();route();toast("Song updated")}catch(e){m.textContent=e.message}};
+$("#sdel").onclick=async()=>{if(!editing)return;const d=$("#sdel"),m=$("#smsg");
+  if(!d.classList.contains("sure")){d.classList.add("sure");d.innerHTML=ico("trash")+" Tap again to delete";m.textContent="This removes the song for everyone. It can't be undone.";return}
+  d.disabled=true;m.textContent="Deleting…";
+  try{await api("track?id="+encodeURIComponent(editing.id),{method:"DELETE"});const id=editing.id,title=editing.title;
+    tracks=tracks.filter(x=>x.id!==id);queue=queue.filter(x=>x&&x.id!==id);
+    if(current?.id===id){audio.pause();audio.removeAttribute("src");current=null;qi=-1;renderNP();setPP()}else if(current)qi=queue.findIndex(x=>x.id===current.id);
+    editing=null;$("#songm").classList.add("hide");renderShell();route();toast("Deleted “"+title+"”")}
+  catch(e){m.textContent=e.message;d.disabled=false}};
 
 /* ---------- upload & earnings ---------- */
 function bindUpload(){const b=$("#upbtn");if(!b)return;
