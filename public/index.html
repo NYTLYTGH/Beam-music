@@ -132,6 +132,7 @@ textarea.in{min-height:140px;resize:vertical;line-height:1.5}
 .avpick{position:relative;cursor:pointer;border-radius:50%}
 .avpick .ov{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.6);display:grid;place-items:center;text-align:center;font-weight:700;font-size:13px;opacity:0;transition:.2s}
 .avpick:hover .ov,.avpick:focus-within .ov{opacity:1}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.auth.login .su{display:none}#authswap a{color:var(--ink);font-weight:700;text-decoration:underline;cursor:pointer}
 .auth{text-align:center}.auth .in{text-align:left}
 .auth .logo{display:inline-flex;margin-bottom:8px}
 
@@ -247,10 +248,12 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radiu
   <div class="dlg auth">
     <h3 id="authttl"><span>Log in to Beam</span><button class="icob" data-close aria-label="Close"><svg><use href="#i-x"/></svg></button></h3>
     <div class="form" style="margin:0 auto">
-      <input class="in" id="em" type="email" placeholder="Email address" autocomplete="email">
-      <input class="in" id="pw" type="password" placeholder="Password (8+ characters)" autocomplete="current-password">
-      <button class="btn acc" id="login">Log in</button>
-      <button class="btn ghost" id="signup">Create a free account</button>
+      <div class="su two"><input class="in" id="fn" placeholder="First name" autocomplete="given-name" maxlength="50" aria-label="First name"><input class="in" id="ln" placeholder="Last name" autocomplete="family-name" maxlength="50" aria-label="Last name"></div>
+      <input class="in" id="em" type="email" placeholder="Email address" autocomplete="email" aria-label="Email address">
+      <input class="in su" id="ph" type="tel" placeholder="Phone number (e.g. 024 123 4567)" autocomplete="tel" maxlength="30" aria-label="Phone number">
+      <input class="in" id="pw" type="password" placeholder="Password (8+ characters)" autocomplete="current-password" aria-label="Password">
+      <button class="btn acc" id="authgo">Log in</button>
+      <p class="note" id="authswap"></p>
       <p class="msg" id="amsg"></p>
     </div>
   </div>
@@ -271,8 +274,10 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radiu
       </div>
     </div>
     <div style="display:grid;gap:12px;margin-top:14px">
+      <div class="two"><label>First name<input class="in" id="pfn" maxlength="50" autocomplete="given-name"></label><label>Last name<input class="in" id="pln" maxlength="50" autocomplete="family-name"></label></div>
+      <label>Phone number <span class="note" style="font-weight:400">(private, never shown on your profile)</span><input class="in" id="pph" type="tel" maxlength="30" autocomplete="tel"></label>
       <label>About<textarea class="in" id="pabout" maxlength="1500" placeholder="Tell listeners who you are, your sound, your story…"></textarea></label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="two">
         <label>Website<input class="in" id="pweb" maxlength="200" placeholder="yoursite.com"></label>
         <label>Instagram<input class="in" id="pig" maxlength="60" placeholder="@handle"></label>
       </div>
@@ -318,7 +323,13 @@ async function load(){
     me?sb.from("purchases").select("*"):Promise.resolve({data:[]}),
     fetch("/api/profiles").then(r=>r.ok?r.json():[]).catch(()=>[])]);
   tracks=t.data||[];sales=s.data||[];profiles=new Map((p||[]).map(x=>[x.userId,x]));
+  if(me)await syncMine();
   renderShell();route()}
+// Loads your own full profile (incl. private phone) and copies the sign-up details into it the first time.
+async function syncMine(){try{let mine=await api("profiles?mine=1");const md=me.user_metadata||{};
+  if(md.first_name&&!mine?.firstName){const body={firstName:md.first_name,lastName:md.last_name||"",phone:md.phone||""};
+    if(!mine?.displayName)body.displayName=(md.first_name+" "+(md.last_name||"")).trim();mine=await api("profiles",{method:"PUT",body:JSON.stringify(body)})}
+  if(mine)profiles.set(me.id,mine)}catch(e){}}
 
 /* ---------- shell ---------- */
 function renderShell(){
@@ -478,22 +489,37 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelect
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.add("hide")}));
 
 /* ---------- auth ---------- */
-function openAuth(mode){$("#amsg").textContent="";$("#authttl span").textContent=mode==="signup"?"Sign up to start listening":"Log in to Beam";$("#authm").classList.remove("hide");$("#em").focus()}
-$("#login").onclick=async()=>{const r=await sb.auth.signInWithPassword({email:$("#em").value,password:$("#pw").value});
-  if(r.error)$("#amsg").textContent=r.error.message;else{$("#authm").classList.add("hide");load()}};
-$("#signup").onclick=async()=>{const r=await sb.auth.signUp({email:$("#em").value,password:$("#pw").value});
-  $("#amsg").textContent=r.error?r.error.message:(r.data.session?"Welcome!":"Check your email to confirm your account, then log in.");
-  if(r.data?.session){$("#authm").classList.add("hide");await load();openEdit()}};
-$("#pw").addEventListener("keydown",e=>{if(e.key==="Enter")$("#login").click()});
+let authMode="login";
+function openAuth(mode){authMode=mode==="signup"?"signup":"login";const su=authMode==="signup";
+  $("#authm .dlg").classList.toggle("login",!su);$("#amsg").textContent="";
+  $("#authttl span").textContent=su?"Sign up to start listening":"Log in to Beam";$("#authgo").textContent=su?"Create account":"Log in";
+  $("#pw").autocomplete=su?"new-password":"current-password";
+  $("#authswap").innerHTML=su?'Already have an account? <a data-swap="login">Log in</a>':'New to Beam? <a data-swap="signup">Create a free account</a>';
+  $("#authm").classList.remove("hide");(su?$("#fn"):$("#em")).focus()}
+$("#authswap").onclick=e=>{const a=e.target.closest("[data-swap]");if(a)openAuth(a.dataset.swap)};
+$("#authgo").onclick=()=>authMode==="signup"?signup():login();
+async function login(){const m=$("#amsg");m.textContent="Logging in…";const r=await sb.auth.signInWithPassword({email:$("#em").value.trim(),password:$("#pw").value});
+  if(r.error)m.textContent=r.error.message;else{$("#authm").classList.add("hide");load()}}
+async function signup(){const m=$("#amsg"),first=$("#fn").value.trim(),last=$("#ln").value.trim(),email=$("#em").value.trim(),phone=$("#ph").value.trim(),pw=$("#pw").value;
+  if(!first||!last){m.textContent="Enter your first and last name.";return}
+  if(!/^\S+@\S+\.\S+$/.test(email)){m.textContent="Enter a valid email address.";return}
+  if(phone.replace(/\D/g,"").length<9){m.textContent="Enter a valid phone number.";return}
+  if(pw.length<8){m.textContent="Use a password of at least 8 characters.";return}
+  m.textContent="Creating your account…";
+  const r=await sb.auth.signUp({email,password:pw,options:{data:{first_name:first,last_name:last,phone}}});
+  if(r.error){m.textContent=r.error.message;return}
+  if(!r.data.session){m.textContent="Check your email to confirm your account, then log in.";return}
+  $("#authm").classList.add("hide");await load();openEdit()}
+$("#authm").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input"))$("#authgo").click()});
 
 /* ---------- profile editor ---------- */
 function openEdit(){if(!me)return openAuth("login");const p=prof(me.id)||{};
-  $("#pname").value=p.displayName||"";$("#ploc").value=p.location||"";$("#pabout").value=p.about||"";$("#pweb").value=p.website||"";$("#pig").value=p.instagram?"@"+p.instagram:"";
+  $("#pname").value=p.displayName||"";$("#ploc").value=p.location||"";$("#pabout").value=p.about||"";$("#pweb").value=p.website||"";$("#pig").value=p.instagram?"@"+p.instagram:"";$("#pfn").value=p.firstName||"";$("#pln").value=p.lastName||"";$("#pph").value=p.phone||"";
   $("#pmsg").textContent="";$("#avprev").outerHTML=avatar(me.id).replace('class="av ','id="avprev" class="av ');$("#avremove").classList.toggle("hide",!p.avatarVersion);
   $("#editm").classList.remove("hide");$("#pname").focus()}
 $("#psave").onclick=async()=>{const m=$("#pmsg");if(!$("#pname").value.trim()){m.textContent="Add a name for your profile.";return}
   m.textContent="Saving…";
-  try{const p=await api("profiles",{method:"PUT",body:JSON.stringify({displayName:$("#pname").value,location:$("#ploc").value,about:$("#pabout").value,website:$("#pweb").value,instagram:$("#pig").value})});
+  try{const p=await api("profiles",{method:"PUT",body:JSON.stringify({firstName:$("#pfn").value,lastName:$("#pln").value,phone:$("#pph").value,displayName:$("#pname").value,location:$("#ploc").value,about:$("#pabout").value,website:$("#pweb").value,instagram:$("#pig").value})});
     profiles.set(me.id,p);$("#editm").classList.add("hide");renderShell();route();toast("Profile saved")}catch(e){m.textContent=e.message}};
 async function squareJpeg(file,size=480){const img=await createImageBitmap(file);const s=Math.min(img.width,img.height),c=document.createElement("canvas");c.width=c.height=size;
   c.getContext("2d").drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,size,size);return new Promise(r=>c.toBlob(r,"image/jpeg",.86))}
